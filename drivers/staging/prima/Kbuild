@@ -1,63 +1,54 @@
 # We can build either as part of a standalone Kernel build or part
-# of an Android build.  Determine which mechanism is being used
-ifeq ($(MODNAME),)
-	KERNEL_BUILD := 1
-else
-	KERNEL_BUILD := 0
-endif
-
-ifeq ($(KERNEL_BUILD),1)
-	# These are provided in Android-based builds
-	# Need to explicitly define for Kernel-based builds
-	MODNAME := wlan
-	WLAN_ROOT := drivers/staging/prima
-endif
-
-ifeq ($(KERNEL_BUILD), 0)
-# These are configurable via Kconfig for kernel-based builds
-# Need to explicitly configure for Android-based builds
+# of an Android build.
+KERNEL_BUILD := 1
+MODNAME := wlan
+WLAN_ROOT := drivers/staging/prima
 
 #Flag to enable BlueTooth AMP feature
-    CONFIG_PRIMA_WLAN_BTAMP := n
-
+ifeq ($(CONFIG_PRIMA_WLAN_BTAMP),)
+	CONFIG_PRIMA_WLAN_BTAMP := n
+endif
 #Flag to enable Legacy Fast Roaming(LFR)
-    CONFIG_PRIMA_WLAN_LFR := y
-
-#Flag to enable Legacy Fast Roaming(LFR) Make Before Break
-    CONFIG_PRIMA_WLAN_LFR_MBB := y
+ifeq ($(CONFIG_PRIMA_WLAN_LFR),)
+	CONFIG_PRIMA_WLAN_LFR := y
+endif
 
 #JB kernel has PMKSA patches, hence enabling this flag
-    CONFIG_PRIMA_WLAN_OKC := y
+ifeq ($(CONFIG_PRIMA_WLAN_OKC),)
+	CONFIG_PRIMA_WLAN_OKC := y
+endif
 
 # JB kernel has CPU enablement patches, so enable
-    CONFIG_PRIMA_WLAN_11AC_HIGH_TP := y
-
-#Flag to enable mDNS feature
-    CONFIG_MDNS_OFFLOAD_SUPPORT := y
+ifeq ($(CONFIG_PRIMA_WLAN_11AC_HIGH_TP),)
+	CONFIG_PRIMA_WLAN_11AC_HIGH_TP := y
+endif
 
 #Flag to enable TDLS feature
-    CONFIG_QCOM_TDLS := y
+ifeq ($(CONFIG_QCOM_TDLS),)
+	CONFIG_QCOM_TDLS := y
+endif
 
 #Flag to enable Fast Transition (11r) feature
-    CONFIG_QCOM_VOWIFI_11R := y
+ifeq ($(CONFIG_QCOM_VOWIFI_11R),)
+	CONFIG_QCOM_VOWIFI_11R := y
+endif
 
 #Flag to enable Protected Managment Frames (11w) feature
 ifneq ($(CONFIG_PRONTO_WLAN),)
-    CONFIG_WLAN_FEATURE_11W := y
-    endif
+	ifeq ($(CONFIG_WLAN_FEATURE_11W),)
+		CONFIG_WLAN_FEATURE_11W := y
+	endif
+endif
 
 #Flag to enable new Linux Regulatory implementation
-    CONFIG_ENABLE_LINUX_REG := y
+ifeq ($(CONFIG_ENABLE_LINUX_REG),)
+	CONFIG_ENABLE_LINUX_REG := y
+endif
 
 #Flag to enable offload packets feature
-    CONFIG_WLAN_OFFLOAD_PACKETS := y
-
-    endif
-#Flag to enable AP Find feature
-CONFIG_WLAN_FEATURE_AP_FIND := y
-
-# Flag to enable feature Software AP Authentication Offload
-SAP_AUTH_OFFLOAD := y
+ifeq ($(CONFIG_WLAN_OFFLOAD_PACKETS),)
+	CONFIG_WLAN_OFFLOAD_PACKETS := y
+endif
 
 # To enable CONFIG_QCOM_ESE_UPLOAD, dependent config
 # CONFIG_QCOM_ESE must be enabled.
@@ -67,13 +58,13 @@ CONFIG_QCOM_ESE_UPLOAD := n
 # Feature flags which are not (currently) configurable via Kconfig
 
 #Whether to build debug version
-BUILD_DEBUG_VERSION := 0
+BUILD_DEBUG_VERSION := 1
 
 #Enable this flag to build driver in diag version
 BUILD_DIAG_VERSION := 1
 
 #Do we panic on bug?  default is to warn
-PANIC_ON_BUG := 1
+PANIC_ON_BUG := 0
 
 #Re-enable wifi on WDI timeout
 RE_ENABLE_WIFI_ON_WDI_TIMEOUT := 0
@@ -236,10 +227,6 @@ ifeq ($(CONFIG_QCOM_TDLS),y)
 MAC_LIM_OBJS += $(MAC_SRC_DIR)/pe/lim/limProcessTdls.o
 endif
 
-ifeq ($(CONFIG_PRIMA_WLAN_LFR_MBB),y)
-MAC_LIM_OBJS += $(MAC_SRC_DIR)/pe/lim/lim_mbb.o
-endif
-
 MAC_PMM_OBJS := $(MAC_SRC_DIR)/pe/pmm/pmmAP.o \
 		$(MAC_SRC_DIR)/pe/pmm/pmmApi.o \
 		$(MAC_SRC_DIR)/pe/pmm/pmmDebug.o
@@ -299,10 +286,6 @@ endif
 
 ifeq ($(CONFIG_QCOM_TDLS),y)
 SME_CSR_OBJS += $(SME_SRC_DIR)/csr/csrTdlsProcess.o
-endif
-
-ifeq ($(CONFIG_PRIMA_WLAN_LFR_MBB),y)
-SME_CSR_OBJS += $(SME_SRC_DIR)/csr/csr_roam_mbb.o
 endif
 
 SME_PMC_OBJS := $(SME_SRC_DIR)/pmc/pmcApi.o \
@@ -583,9 +566,7 @@ CDEFINES :=	-DANI_BUS_TYPE_PLATFORM=1 \
                 -DWLAN_FEATURE_LINK_LAYER_STATS \
                 -DWLAN_FEATURE_EXTSCAN \
                 -DFEATURE_EXT_LL_STAT \
-                -DWLAN_VOWIFI_DEBUG \
-		-DDHCP_SERVER_OFFLOAD \
-		-DWLAN_FEATURE_TSF
+                -DWLAN_VOWIFI_DEBUG
 
 ifneq ($(CONFIG_PRONTO_WLAN),)
 CDEFINES += -DWCN_PRONTO
@@ -638,10 +619,6 @@ ifeq ($(CONFIG_PRIMA_WLAN_LFR),y)
 CDEFINES += -DFEATURE_WLAN_LFR
 endif
 
-ifeq ($(CONFIG_PRIMA_WLAN_LFR_MBB),y)
-CDEFINES += -DWLAN_FEATURE_LFR_MBB
-endif
-
 ifeq ($(CONFIG_PRIMA_WLAN_OKC),y)
 CDEFINES += -DFEATURE_WLAN_OKC
 endif
@@ -683,15 +660,6 @@ ifeq ($(CONFIG_ENABLE_LINUX_REG), y)
 CDEFINES += -DCONFIG_ENABLE_LINUX_REG
 endif
 
-# Enable feature SAP Authentication Offload
-ifeq ($(SAP_AUTH_OFFLOAD), y)
-CDEFINES += -DSAP_AUTH_OFFLOAD
-endif
-
-ifeq ($(CONFIG_WLAN_FEATURE_AP_FIND), y)
-CDEFINES += -DWLAN_FEATURE_APFIND
-endif
-
 CDEFINES += -DFEATURE_WLAN_CH_AVOID
 CDEFINES += -DWLAN_FEATURE_AP_HT40_24G
 
@@ -707,14 +675,10 @@ CDEFINES += -DEXISTS_MSM_SMSM
 endif
 
 # Fix build for GCC 4.7
-EXTRA_CFLAGS += -Wno-maybe-uninitialized -Wno-unused-function -Wno-unused-variable
+EXTRA_CFLAGS += -Wno-maybe-uninitialized -Wno-unused-function
 
 ifeq ($(CONFIG_WLAN_OFFLOAD_PACKETS),y)
 CDEFINES += -DWLAN_FEATURE_OFFLOAD_PACKETS
-endif
-
-ifeq ($(CONFIG_MDNS_OFFLOAD_SUPPORT), y)
-CDEFINES += -DMDNS_OFFLOAD
 endif
 
 KBUILD_CPPFLAGS += $(CDEFINES)
@@ -723,3 +687,8 @@ KBUILD_CPPFLAGS += $(CDEFINES)
 obj-$(CONFIG_PRIMA_WLAN) += $(MODNAME).o
 obj-$(CONFIG_PRONTO_WLAN) += $(MODNAME).o
 $(MODNAME)-y := $(OBJS)
+
+clean::
+	rm -f *.o *.ko *.mod.c *.mod.o *~ .*.cmd Module.symvers
+	rm -rf .tmp_versions
+
